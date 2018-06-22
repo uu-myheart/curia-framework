@@ -4,12 +4,6 @@
 		"curia/container": "dev-dev",
 		"nikic/fast-route": "^1.3"
 	},
-	"repositories": [
-		{
-            "type": "vcs",
-            "url": "https://github.com/uu-myheart/container"
-        }
-	],
 	"autoload": {
 		"psr-4": {
 			"Curia\\Framework\\": ""
