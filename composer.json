@@ -6,16 +6,10 @@
 	},
 	"repositories": [
 		{
-			"type": "path",
-            "url": "/Users/baigali/code/curia/container",
-            "options": {
-                "symlink": true
-            }
-		}
+            "type": "vcs",
+            "url": "https://github.com/uu-myheart/container"
+        }
 	],
-	"require-dev": {
-		"uu-myheart/dd": "^1.2"
-	},
 	"autoload": {
 		"psr-4": {
 			"Curia\\Framework\\": ""
