@@ -4,9 +4,13 @@
 		"curia/container": "dev-dev",
 		"nikic/fast-route": "^1.3"
 	},
+	"require-dev": {
+		"uu-myheart/dd": "^1.2"
+	},
 	"autoload": {
 		"psr-4": {
 			"Curia\\Framework\\": ""
-		}
+		},
+		"files":["helpers.php"]
 	}
 }
