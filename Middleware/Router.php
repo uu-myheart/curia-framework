@@ -35,10 +35,6 @@ class Router implements MiddlewareInterface
 		        break;
 		    case Dispatcher::FOUND:
 
-//		        foreach ($attributes as $name => $value) {
-//                    $request = $request->withAttribute($name, $value);
-//                }
-
                 $callable = $routeInfo[1];
                 $attributes = $routeInfo[2];
 

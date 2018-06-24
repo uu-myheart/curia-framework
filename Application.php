@@ -17,7 +17,7 @@ class Application extends Container
         $this->bathPath = $bathPath;
 
         $this->registerBaseBindings();
-        $this->registerBaseService();
+//        $this->registerBaseService();
     }
 
     protected function registerBaseBindings()
@@ -29,12 +29,6 @@ class Application extends Container
         // Binding request instance as singleton.
         $this->instance(\Psr\Http\Message\ServerRequestInterface::class, ServerRequestFactory::fromGlobals());
         $this->alias('request', \Psr\Http\Message\ServerRequestInterface::class);
-
-        // Bind psr-7 request handler.
-        $this->bind(
-            \Psr\Http\Server\RequestHandlerInterface::class,
-            \Curia\Framework\Middleware\RequestHandler::class
-        );
         
         // Bind psr-7 response.
         $this->bind(
@@ -44,29 +38,29 @@ class Application extends Container
         $this->alias('response', \Psr\Http\Message\ResponseInterface::class);
     }
 
-    protected function registerBaseService()
-    {
-        $this->register(new Service\RoutingService($this));
-        // $this->register(new Service\RquestHandler($this));  
-    }
-
-    public function register($service)
-    {
-        if (method_exists($service, 'register')) {
-            $service->register();
-        }
-
-        $this->services[] = $service;
-    }
-
-    public function boot()
-    {
-        foreach ($this->services as $service) {
-            if (method_exists($service, 'boot')) {
-                $service->boot();
-            }
-        }
-    }
+//    protected function registerBaseService()
+//    {
+//        $this->register(new Service\RoutingService($this));
+//        // $this->register(new Service\RquestHandler($this));
+//    }
+//
+//    public function register($service)
+//    {
+//        if (method_exists($service, 'register')) {
+//            $service->register();
+//        }
+//
+//        $this->services[] = $service;
+//    }
+//
+//    public function boot()
+//    {
+//        foreach ($this->services as $service) {
+//            if (method_exists($service, 'boot')) {
+//                $service->boot();
+//            }
+//        }
+//    }
 
     public function bathPath()
     {
@@ -77,19 +71,19 @@ class Application extends Container
     {
         $middlewares = $this->getMiddlewares();
 
-        $middlewares[] = $this->get(\Psr\Http\Server\RequestHandlerInterface::class);
-
         $relay = new Relay($middlewares);
         
         $response = $relay->handle($this->get('request'));
 
-        $this->get(\Zend\Diactoros\Response\SapiEmitter::class)->emit($response);
+        if ($response->getBody()->getSize()) {
+            $this->get(\Zend\Diactoros\Response\SapiEmitter::class)->emit($response);
+        }
     }
 
     protected function getMiddlewares()
     {
         $middlewares[] = $this->get(\Curia\Framework\Middleware\Router::class);
-        
+
         return $middlewares;
     }
 }
