@@ -5,7 +5,6 @@ namespace Curia\Framework;
 use Relay\Relay;
 use Curia\Container\Container;
 use Psr\Http\Message\ResponseInterface;
-use Zend\Diactoros\ServerRequestFactory;
 
 class Application extends Container
 {
@@ -47,17 +46,6 @@ class Application extends Container
         static::setInstance($this);
         $this->instance(Container::class, $this);
         $this->instance(get_class($this), $this);
-
-        // Binding request instance as singleton.
-        $this->instance(\Psr\Http\Message\ServerRequestInterface::class, ServerRequestFactory::fromGlobals());
-        $this->alias('request', \Psr\Http\Message\ServerRequestInterface::class);
-        
-        // Bind psr-7 response.
-        $this->bind(
-            \Psr\Http\Message\ResponseInterface::class,
-            \Zend\Diactoros\Response::class
-        );
-        $this->alias('response', \Psr\Http\Message\ResponseInterface::class);
     }
 
     /**
@@ -66,6 +54,7 @@ class Application extends Container
     protected function registerBaseService()
     {
         $this->register(new Service\ExceptionService($this));
+        $this->register(new Service\CoreService($this));
     }
 
     /**
@@ -143,6 +132,9 @@ class Application extends Container
      */
     protected function getMiddlewares()
     {
+        $middlewares[] = $this->get(\Curia\Framework\Middleware\AgeFilter::class);
+
+        // Router need to be the last middlware.
         $middlewares[] = $this->get(\Curia\Framework\Middleware\Router::class);
 
         return $middlewares;

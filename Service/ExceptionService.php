@@ -2,7 +2,7 @@
 
 namespace Curia\Framework\Service;
 
-class ExceptionService
+class ExceptionService extends Service
 {
     /**
      * Boot current service.
