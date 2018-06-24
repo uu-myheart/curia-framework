@@ -54,7 +54,7 @@ class Application extends Container
     protected function registerBaseService()
     {
         $this->register(new Service\ExceptionService($this));
-        $this->register(new Service\CoreService($this));
+        $this->register(new Service\HttpService($this));
     }
 
     /**
@@ -102,6 +102,7 @@ class Application extends Container
     {
         if (! $this->booted) {
             $this->boot();
+            $this->booted = true;
         }
 
         // Handler is also a dispatcher.

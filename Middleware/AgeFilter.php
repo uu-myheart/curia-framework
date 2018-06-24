@@ -11,7 +11,7 @@ class AgeFilter implements MiddlewareInterface
 {
     public function process(ServerRequestInterface $request, RequestHandlerInterface $next): ResponseInterface
     {
-        if ($request->getQueryParams()['age'] < 18) {
+        if ($request->has('age') && ($request->get('age') < 18)) {
             return response('Teenager forbiden!', 401);
         }
 

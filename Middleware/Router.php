@@ -34,17 +34,11 @@ class Router implements MiddlewareInterface
 		switch ($routeInfo[0]) {
 		    case Dispatcher::NOT_FOUND:
 		    	throw new \Exception('404 Not Found.');
-		        break;
 		    case Dispatcher::METHOD_NOT_ALLOWED:
-		    	echo 405;
-		        $allowedMethods = $routeInfo[1];
-		        // ... 405 Method Not Allowed
-		        break;
+                throw new \Exception('405 Method Not Allowed');
 		    case Dispatcher::FOUND:
-
                 $callable = $routeInfo[1];
                 $attributes = $routeInfo[2];
-
                 $data = app()->call($callable, $attributes);
 
                 return $this->response($data);
