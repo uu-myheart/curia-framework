@@ -13,10 +13,17 @@ use Psr\Http\Server\RequestHandlerInterface;
 
 class Router implements MiddlewareInterface
 {
+    /**
+     * Psr-7 middleware processer.
+     * @param ServerRequestInterface $request
+     * @param RequestHandlerInterface $handler
+     * @return ResponseInterface
+     * @throws \Exception
+     */
 	public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
 	{
 		$routes = simpleDispatcher(function (RouteCollector $router) {
-			require app()->bathPath() . '/app/routes.php';
+			require app()->basePath() . '/app/routes.php';
 		});
 
 		// Fetch method and URI.
@@ -44,6 +51,11 @@ class Router implements MiddlewareInterface
 		}
 	}
 
+    /**
+     * Transform give type to a response.
+     * @param $data
+     * @return \Psr\Http\Message\ResponseInterface
+     */
     protected function response($data)
     {
         if ($data instanceof ResponseInterface) {
