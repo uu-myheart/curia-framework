@@ -4,14 +4,9 @@ namespace Curia\Framework\Middleware;
 
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Server\MiddlewareInterface;
 use function FastRoute\simpleDispatcher;
-use Psr\Http\Server\RequestHandlerInterface;
 
-class Router implements MiddlewareInterface
+class Router
 {
     /**
      * Psr-7 middleware processer.
@@ -46,7 +41,7 @@ class Router implements MiddlewareInterface
 	}
 
     /**
-     * Transform give type to a response.
+     * Transform given type to a response.
      * @param $data
      * @return \Psr\Http\Message\ResponseInterface
      */

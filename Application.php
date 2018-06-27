@@ -4,27 +4,52 @@ namespace Curia\Framework;
 
 use Curia\Baton\Baton;
 use Curia\Container\Container;
+use Curia\Framework\Routing\Router;
 use Psr\Http\Message\ResponseInterface;
 
 class Application extends Container
 {
     /**
      * Application base path.
+     *
      * @var string
      */
     protected $basePath;
 
     /**
      * Application services.
+     *
      * @var array
      */
     protected $services = [];
 
     /**
      * Application services booted or not.
+     *
      * @var boolean
      */
     protected $booted;
+
+    /**
+     * The Router instance.
+     *
+     * @var \Curia\Framework\Routing\Router
+     */
+    public $router;
+
+    /**
+     * All of the global middleware for the application.
+     *
+     * @var array
+     */
+    protected $middlewares = [];
+
+    /**
+     * All of the route specific middleware short-hands.
+     *
+     * @var array
+     */
+    protected $routeMiddlewares = [];
 
     /**
      * Application constructor.
@@ -36,6 +61,7 @@ class Application extends Container
 
         $this->registerBaseBindings();
         $this->registerBaseService();
+        $this->bootRouter();
     }
 
     /**
@@ -59,7 +85,9 @@ class Application extends Container
 
     /**
      * Register a given sevice.
+     *
      * @param $service
+     * @return void
      */
     public function register($service)
     {
@@ -68,6 +96,16 @@ class Application extends Container
         }
 
         $this->services[] = $service;
+    }
+
+    /**
+     * Bootstrap the router instance.
+     *
+     * @return void
+     */
+    protected function bootRouter()
+    {
+        $this->router = new Router($this);
     }
 
     /**
@@ -81,6 +119,32 @@ class Application extends Container
                 $service->boot();
             }
         }
+
+        return $this;
+    }
+
+    /**
+     * Add new middleware to the application.
+     *
+     * @param  Closure|array  $middleware
+     * @return $this
+     */
+    public function middleware($middlewares)
+    {
+        $this->middlewares = array_unique(array_merge($this->middlewares, (array) $middlewares));
+
+        return $this;
+    }
+
+    /**
+     * Define the route middleware for the application.
+     *
+     * @param  array  $middleware
+     * @return $this
+     */
+    public function routeMiddleware(array $middlewares)
+    {
+        $this->routeMiddlewares = array_merge($this->routeMiddlewares, $middlewares);
 
         return $this;
     }
@@ -105,11 +169,20 @@ class Application extends Container
             $this->booted = true;
         }
 
-        // Handler is also a dispatcher.
-        $handler = $this->getHandler();
+        // Through Global Middleware.
+//        $request = $this->getHandler()->handle($this['request']);
+        $request = (new Baton($this))
+                        ->send($this['request'])
+                        ->through($this->middlewares)
+                        ->then(function ($request) {
+                            return $request;
+                        });
 
-        // Handle request and get response.
-        $response = $handler->handle($this->get('request'));
+        if ($request instanceof ResponseInterface) {
+            return $this->send($request);
+        }
+
+        $response = $this->router->handle($request);
 
         $this->send($response);
     }
@@ -119,26 +192,22 @@ class Application extends Container
      * @return Relay
      * @throws \ReflectionException
      */
-    protected function getHandler()
+//    protected function get()
+//    {
+//        // Resolve all the middlewares from Container.
+//        $middlewares = array_map(function ($middleware) {
+//            return $this[$middleware];
+//        }, $this->middlewares);
+//
+//        // Router is the last global middleware.
+////        $middlewares[] = $this->router;
+//
+//        return new Baton($middlewares);
+//    }
+
+    public function getRouteMiddlewares()
     {
-        $middlewares = $this->getMiddlewares();
-
-        return new Baton($middlewares);
-    }
-
-    /**
-     * Get application middlewares.
-     * @return array
-     * @throws \ReflectionException
-     */
-    protected function getMiddlewares()
-    {
-        $middlewares[] = $this->get(\Curia\Framework\Middleware\AgeFilter::class);
-
-        // Router need to be the last middlware.
-        $middlewares[] = $this->get(\Curia\Framework\Middleware\Router::class);
-
-        return $middlewares;
+        return $this->routeMiddlewares;
     }
 
     /**
