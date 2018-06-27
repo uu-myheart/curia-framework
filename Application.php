@@ -2,7 +2,7 @@
 
 namespace Curia\Framework;
 
-use Relay\Relay;
+use Curia\Baton\Baton;
 use Curia\Container\Container;
 use Psr\Http\Message\ResponseInterface;
 
@@ -123,7 +123,7 @@ class Application extends Container
     {
         $middlewares = $this->getMiddlewares();
 
-        return new Relay($middlewares);
+        return new Baton($middlewares);
     }
 
     /**
