@@ -5,7 +5,7 @@ namespace Curia\Framework\Service;
 class ExceptionService extends Service
 {
     /**
-     * Boot current service.
+     * 启动Whoops
      */
     public function boot()
     {

@@ -43,6 +43,7 @@ class Router
 
     /**
      * Router constructor.
+     *
      * @param \Curia\Framework\Application $app
      */
     public function __construct(Application $app)
@@ -71,9 +72,13 @@ class Router
     }
 
     /**
+     * 声明路由
+     *
      * @param $method
      * @param string $uri
      * @param $handler
+     *
+     * @return void
      */
     public function addRoute($method,string $uri, $handler)
     {
@@ -96,6 +101,8 @@ class Router
     }
 
     /**
+     * 格式化路由信息
+     *
      * 获取路由定义中完整的uri,namespace,middlewares
      * @param string $uri
      * @return array
@@ -235,12 +242,12 @@ class Router
     }
 
     /**
-     * Handle the request.
+     * 分发请求
      *
      * @param $request
-     * @return \Psr\Http\Message\ResponseInterface
+     * @return mixed
      */
-    public function handle($request)
+    public function dispatch($request)
     {
         [$method, $uri] = $this->parseIncomingRequest($request);
 
@@ -258,6 +265,7 @@ class Router
 
     /**
      * 注册FastRoute并返回实例
+     *
      * @return \FastRoute\Dispatcher
      */
     protected function fastRoute()
@@ -290,6 +298,14 @@ class Router
         }
     }
 
+    /**
+     * 路由匹配成功以后，执行中间件，分发action
+     *
+     * @param $currentRoute
+     * @param array $actionVars
+     * @return mixed
+     * @throws Exception
+     */
     protected function handleFoundRoute($currentRoute, $actionVars = [])
     {
         $middlewares = $currentRoute['middleware'];
@@ -308,6 +324,12 @@ class Router
         return $this->app->call($handler, $actionVars);
     }
 
+    /**
+     * 获取中间件的类名以便于容器实例化
+     *
+     * @param $middlewares
+     * @return array
+     */
     protected function gatherMiddlewareClassNames($middlewares)
     {
         $registerd = $this->app->getRouteMiddlewares();
@@ -317,6 +339,12 @@ class Router
         }, $middlewares);
     }
 
+    /**
+     * 获取请求方法和路径，用于路由匹配
+     *
+     * @param $request
+     * @return array
+     */
     protected function parseIncomingRequest($request)
     {
         $method = $request->getMethod();

@@ -46,6 +46,7 @@ class Application extends Container
 
     /**
      * Application constructor.
+     *
      * @param null $basePath
      */
     public function __construct($basePath = null)
@@ -58,7 +59,9 @@ class Application extends Container
     }
 
     /**
-     * Register Application Base Bindings.
+     * 基础绑定
+     *
+     * @return void
      */
     protected function registerBaseBindings()
     {
@@ -77,7 +80,7 @@ class Application extends Container
     }
 
     /**
-     * Register a given sevice.
+     * 注册服务
      *
      * @param $service
      * @return void
@@ -92,7 +95,7 @@ class Application extends Container
     }
 
     /**
-     * Bootstrap the router instance.
+     * 初始化路由
      *
      * @return void
      */
@@ -102,7 +105,8 @@ class Application extends Container
     }
 
     /**
-     * Boot application services.
+     * 启动应用服务
+     *
      * @return $this
      */
     public function bootServices()
@@ -117,7 +121,7 @@ class Application extends Container
     }
 
     /**
-     * Add new middleware to the application.
+     * 增加全局中间件
      *
      * @param  Closure|array  $middleware
      * @return $this
@@ -130,7 +134,7 @@ class Application extends Container
     }
 
     /**
-     * Define the route middleware for the application.
+     * 定义路由中间件
      *
      * @param  array  $middleware
      * @return $this
@@ -143,7 +147,8 @@ class Application extends Container
     }
 
     /**
-     * Get application base path
+     * 获取项目目录
+     *
      * @return string
      */
     public function basePath()
@@ -153,7 +158,6 @@ class Application extends Container
 
     /**
      * Run the applicaton.
-     * @throws \ReflectionException
      */
     public function run()
     {
@@ -162,28 +166,56 @@ class Application extends Container
         $response = (new Baton($this))
                         ->send($this['request'])
                         ->through($this->middlewares)
-                        ->then(function ($request) {
-                            $this->instance('request', $request);
-                            $this->router->handle($request);
-                        });
+                        ->then($this->dispatchToRouter());
 
         $this->send($response);
     }
 
+    /**
+     * 请求通过全局中间件后进入路由
+     *
+     * @return Closure
+     */
+    protected function dispatchToRouter()
+    {
+        return function ($request) {
+            $this->instance('request', $request);
+
+            return $this->router->dispatch($request);
+        };
+    }
+
+    /**
+     * 获取路由中间件
+     *
+     * @return array
+     */
     public function getRouteMiddlewares()
     {
         return $this->routeMiddlewares;
     }
 
     /**
-     * Emit the response.
-     * @param ResponseInterface $response
-     * @throws \ReflectionException
+     * 向客户端发送响应
+     *
+     * @param $response
+     * @return \Psr\Http\Message\ResponseInterface
      */
-    protected function send(ResponseInterface $response)
+    protected function send($data)
     {
-        if ($response->getBody()->getSize()) {
-            $this->get(\Zend\Diactoros\Response\SapiEmitter::class)->emit($response);
+        if ($data instanceof \CUria\Framework\Http\Response) {
+            return $data->send();
         }
+
+        $response = $this['response'];
+
+        if (is_array($data)) {
+            $response->getBody()->write(json_encode($data));
+            return $response->withHeader('accept', 'application/json')
+                        ->send();
+        }
+
+        $response->getBody()->write($data);
+        $response->send();
     }
 }
