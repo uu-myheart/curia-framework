@@ -24,13 +24,6 @@ class Application extends Container
     protected $services = [];
 
     /**
-     * Application services booted or not.
-     *
-     * @var boolean
-     */
-    protected $booted;
-
-    /**
      * The Router instance.
      *
      * @var \Curia\Framework\Routing\Router
@@ -112,7 +105,7 @@ class Application extends Container
      * Boot application services.
      * @return $this
      */
-    public function boot()
+    public function bootServices()
     {
         foreach ($this->services as $service) {
             if (method_exists($service, 'boot')) {
@@ -164,20 +157,15 @@ class Application extends Container
      */
     public function run()
     {
-        if (! $this->booted) {
-            $this->boot();
-            $this->booted = true;
-        }
+        $this->bootServices();
 
         $response = (new Baton($this))
                         ->send($this['request'])
                         ->through($this->middlewares)
                         ->then(function ($request) {
-                            //TODO 是否可以直接写成$this->router->handle, 而不用闭包包裹起来
                             $this->instance('request', $request);
                             $this->router->handle($request);
                         });
-        dd(222, $response);
 
         $this->send($response);
     }

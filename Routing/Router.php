@@ -244,11 +244,9 @@ class Router
     {
         [$method, $uri] = $this->parseIncomingRequest($request);
 
-         // dd('all routes', $this->routes);
         // 如果直接匹配静态uri成功的话就不用启动[FastRoute]
         if (isset($this->routes[$method.$uri])) {
             $currentRoute = $this->routes[$method.$uri];
-            // dd('current route', $currentRoute);
             return $this->handleFoundRoute($currentRoute['action']);
         }
 
@@ -300,20 +298,17 @@ class Router
         if (count($middlewares) > 0) {
             $response = (new Baton($this->app))
                 ->send($this->app['request'])
-                ->through($this->getMiddlewares($middlewares))
-                ->then(function ($request) use ($handler) {
+                ->through($this->gatherMiddlewareClassNames($middlewares))
+                ->then(function ($request) use ($handler, $actionVars) {
                     $this->app->instance('request', $request);
-                    return $this->app->call($handler);
+                    return $this->app->call($handler, $actionVars);
                 });
-        } else {
-            $response = $this->app->call($handler);
         }
 
-        dd('response for last', $response);
-        return $this->prepareResponse($response);
+        return $this->app->call($handler, $actionVars);
     }
 
-    protected function getMiddlewares($middlewares)
+    protected function gatherMiddlewareClassNames($middlewares)
     {
         $registerd = $this->app->getRouteMiddlewares();
 
@@ -322,29 +317,12 @@ class Router
         }, $middlewares);
     }
 
-    /**
-     * Transform given type to a response.
-     * @param $data
-     * @return \Psr\Http\Message\ResponseInterface
-     */
-    protected function generateResponse($data)
-    {
-        if ($data instanceof ResponseInterface) {
-            return $data;
-        }
-
-        $response = $this->app['response'];
-        $body = is_array($data) ? json_encode($data) : $data;
-        $response->getBody()->write($body);
-
-        return $response;
-    }
-
     protected function parseIncomingRequest($request)
     {
-        return [
-            $request->getMethod(),
-            rtrim($request->getUri()->getPath(), '/'),
-        ];
+        $method = $request->getMethod();
+        $uri = $request->getUri()->getPath();
+        $uri = ($uri === '/') ? $uri : rtrim($uri, '/');
+
+        return [$method, $uri];
     }
 }
