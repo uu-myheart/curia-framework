@@ -169,41 +169,18 @@ class Application extends Container
             $this->booted = true;
         }
 
-        // Through Global Middleware.
-//        $request = $this->getHandler()->handle($this['request']);
-        $request = (new Baton($this))
+        $response = (new Baton($this))
                         ->send($this['request'])
                         ->through($this->middlewares)
                         ->then(function ($request) {
-                            return $request;
+                            //TODO 是否可以直接写成$this->router->handle, 而不用闭包包裹起来
+                            $this->instance('request', $request);
+                            $this->router->handle($request);
                         });
-
-        if ($request instanceof ResponseInterface) {
-            return $this->send($request);
-        }
-
-        $response = $this->router->handle($request);
+        dd(222, $response);
 
         $this->send($response);
     }
-
-    /**
-     * Get the request handler.
-     * @return Relay
-     * @throws \ReflectionException
-     */
-//    protected function get()
-//    {
-//        // Resolve all the middlewares from Container.
-//        $middlewares = array_map(function ($middleware) {
-//            return $this[$middleware];
-//        }, $this->middlewares);
-//
-//        // Router is the last global middleware.
-////        $middlewares[] = $this->router;
-//
-//        return new Baton($middlewares);
-//    }
 
     public function getRouteMiddlewares()
     {
