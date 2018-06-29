@@ -180,7 +180,7 @@ class Application extends Container
     {
         return function ($request) {
             $this->instance('request', $request);
-
+            
             return $this->router->dispatch($request);
         };
     }
@@ -211,8 +211,8 @@ class Application extends Container
 
         if (is_array($data)) {
             $response->getBody()->write(json_encode($data));
-            return $response->withHeader('accept', 'application/json')
-                        ->send();
+
+            return $response->withHeader('accept', 'application/json')->send();
         }
 
         $response->getBody()->write($data);
