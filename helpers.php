@@ -19,7 +19,14 @@ if (! function_exists('response')) {
         }
 
         $response->getBody()->write($data);
-        
+
         return $response->withStatus($statusCode);
+    }
+}
+
+if (! function_exists('redirect')) {
+    function redirect($uri, $status = 302, array $headers = [])
+    {
+        return new \Curia\Framework\Http\Redirect($uri, $status, $headers);
     }
 }
