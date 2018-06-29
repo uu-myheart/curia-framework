@@ -10,7 +10,7 @@ if (! function_exists('app')) {
 }
 
 if (! function_exists('response')) {
-    function response($data, $statusCode = 200)
+    function response($data = '', $statusCode = 200)
     {
         $response = app('response');
 
@@ -21,6 +21,5 @@ if (! function_exists('response')) {
         $response->getBody()->write($data);
         
         return $response->withStatus($statusCode);
-        
     }
 }

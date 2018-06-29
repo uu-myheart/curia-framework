@@ -41,6 +41,8 @@ class Router
      */
     protected $currentRoute;
 
+    protected $middleware = [];
+
     /**
      * Router constructor.
      *
@@ -88,6 +90,12 @@ class Router
             $handler = $namespace . $handler;
         }
 
+        if (count($this->middleware) > 0) {
+            $middleware = array_unique(array_merge($middleware, $this->middleware));
+
+            $this->middleware = [];
+        }
+
         foreach ((array) $method as $verb) {
             $this->routes[$verb.$uri] = [
                 'method' => $method,
@@ -98,6 +106,17 @@ class Router
                 ],
             ];
         }
+    }
+
+    public function middleware($middlewareName)
+    {
+        if (is_string($middlewareName)) {
+            $middlewareName = explode('|', $middlewareName);
+        }
+
+        $this->middleware = $middlewareName;
+
+        return $this;
     }
 
     /**
@@ -299,7 +318,7 @@ class Router
     }
 
     /**
-     * 路由匹配成功以后，执行中间件，分发action
+     * 路由匹配成功以后，执行中间件和action
      *
      * @param $currentRoute
      * @param array $actionVars
@@ -312,7 +331,7 @@ class Router
         $handler = $currentRoute['handler'];
 
         if (count($middlewares) > 0) {
-            $response = (new Baton($this->app))
+            return (new Baton($this->app))
                 ->send($this->app['request'])
                 ->through($this->gatherMiddlewareClassNames($middlewares))
                 ->then(function ($request) use ($handler, $actionVars) {
@@ -335,7 +354,7 @@ class Router
         $registerd = $this->app->getRouteMiddlewares();
 
         return array_map(function ($middleware) use ($registerd) {
-            return $this->app->get($registerd[$middleware]);
+            return $registerd[$middleware];
         }, $middlewares);
     }
 

@@ -6,6 +6,11 @@ use Zend\Diactoros\Response as ZendResponse;
 
 class Response extends ZendResponse
 {
+    public function json()
+    {
+        return $this->withHeader('accept', 'application/json');
+    }
+
     /**
      * 发送响应
      */
