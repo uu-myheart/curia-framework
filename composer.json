@@ -3,7 +3,7 @@
 	"require": {
 		"php": "^7.1",
 		"curia/container": "dev-dev",
-		"curia/baton": "dev-dev",
+		"curia/collect": "dev-dev",
 		"nikic/fast-route": "~1.3.0",
 		"zendframework/zend-diactoros": "~1.7.0",
 		"tightenco/collect": "5.6.*",

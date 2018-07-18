@@ -4,7 +4,7 @@ namespace Curia\Framework\Routing;
 
 use Closure;
 use Exception;
-use Curia\Baton\Baton;
+use Curia\Framework\Baton;
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
 use Curia\Framework\Application;

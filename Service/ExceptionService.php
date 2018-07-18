@@ -5,12 +5,14 @@ namespace Curia\Framework\Service;
 class ExceptionService extends Service
 {
     /**
-     * 启动Whoops
+     * 调试模式中启动Whoops
      */
-    public function boot()
+    public function register()
     {
-        $whoops = new \Whoops\Run;
-        $whoops->pushHandler(new \Whoops\Handler\PrettyPageHandler);
-        $whoops->register();
+    	if (env('APP_DEBUG')) {
+	        $whoops = new \Whoops\Run;
+	        $whoops->pushHandler(new \Whoops\Handler\PrettyPageHandler);
+	        $whoops->register();
+    	}
     }
 }

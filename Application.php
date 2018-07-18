@@ -2,7 +2,8 @@
 
 namespace Curia\Framework;
 
-use Curia\Baton\Baton;
+use Curia\Collect\Str;
+use Curia\Framework\Baton;
 use Curia\Container\Container;
 use Curia\Framework\Routing\Router;
 use Psr\Http\Message\ResponseInterface;
@@ -15,6 +16,13 @@ class Application extends Container
      * @var string
      */
     protected $basePath;
+
+    /**
+     * 配置文件管理实例
+     * 
+     * @var \Curia\Framework\Config 
+     */
+    protected $config;
 
     /**
      * Application services.
@@ -47,15 +55,71 @@ class Application extends Container
     /**
      * Application constructor.
      *
-     * @param null $basePath
+     * @param null
      */
     public function __construct($basePath = null)
     {
-        $this->basePath = $basePath;
+        // 设置应用的各个路径
+        $this->setPath($basePath);
+
+        $this->loadConfiguration();
 
         $this->registerBaseBindings();
+
         $this->registerBaseService();
+
         $this->bootRouter();
+    }
+
+    /**
+     * 设置应用的各个路径
+     *
+     * @param $bathPath
+     * @return void
+     */
+    protected function setPath($basePath)
+    {
+        $this->basePath = $basePath;
+
+        $this->configPath = $basePath . '/config';
+    }
+
+    /**
+     * 加载配置文件
+     */
+    protected function loadConfiguration()
+    {
+        // 加载应用目录中的.env到$_ENV
+        (new \Dotenv\Dotenv($this->basePath()))->load();
+        
+        // 实例化创建配置文件管理类
+        $this->config = new Config(
+            $this->getConfiguration()
+        );
+    }
+
+    protected function getConfiguration()
+    {
+        return collect(
+            scandir($this->configPath)
+        )->flatMap(function ($item) {
+            $file = $this->configPath . DIRECTORY_SEPARATOR . $item;
+
+            if(is_file($file) && Str::endsWith($file, '.php')) {
+                return [Str::before($item, '.php') => require($file) ];
+            }
+        })->toArray();
+    }
+
+    /**
+     * 获取config实例或者具体配置内容
+     * 
+     * @param null $key
+     * @return Config
+     */
+    public function config($key = null)
+    {
+        return $key ? $this->config->get($key) : $this->config;
     }
 
     /**
@@ -77,6 +141,7 @@ class Application extends Container
     {
         $this->register(new Service\ExceptionService($this));
         $this->register(new Service\HttpService($this));
+        $this->register(new Service\DatabaseService($this));
     }
 
     /**
