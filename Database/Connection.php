@@ -60,7 +60,7 @@ Class Connection
      */
     public function insert($query, $bindings = [])
     {
-        return $this->bindAndExecute($query, $bindings);
+        return $this->statement($query, $bindings);
     }
 
     /**
@@ -72,7 +72,7 @@ Class Connection
      */
     public function update($query, $bindings = [])
     {
-        return $this->bindAndExecute($query, $bindings);
+        return $this->statement($query, $bindings);
     }
 
     /**
@@ -84,10 +84,10 @@ Class Connection
      */
     public function delete($query, $bindings = [])
     {
-        return $this->bindAndExecute($query, $bindings);
+        return $this->statement($query, $bindings);
     }
 
-    protected function bindAndExecute($query, $bindings)
+    protected function statement($query, $bindings)
     {
     	$statement = $this->pdo->prepare($query);
 
@@ -112,6 +112,36 @@ Class Connection
                 is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR
             );
         }
+    }
+
+    public function transaction(Callable $callback)
+    {
+        try {
+            $this->pdo->beginTransaction();
+
+            $callback();
+
+            $this->pdo->commit();
+        } catch (Exception $e) {
+            $this->rollBack();
+
+            throw $e;
+        }
+    }
+
+    public function beginTransaction()
+    {
+        $this->pdo->beginTransaction();
+    }
+
+    public function commit()
+    {
+        $this->pdo->commit();
+    }
+
+    public function rollback()
+    {
+        $this->pdo->rollback();
     }
 }
 

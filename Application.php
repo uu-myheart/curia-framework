@@ -142,6 +142,7 @@ class Application extends Container
         $this->register(new Service\ExceptionService($this));
         $this->register(new Service\HttpService($this));
         $this->register(new Service\DatabaseService($this));
+        $this->register(new Service\FacadeService($this));
     }
 
     /**
