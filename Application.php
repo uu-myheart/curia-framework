@@ -32,13 +32,6 @@ class Application extends Container
     protected $services = [];
 
     /**
-     * The Router instance.
-     *
-     * @var \Curia\Framework\Routing\Router
-     */
-    public $router;
-
-    /**
      * All of the global middleware for the application.
      *
      * @var array
@@ -67,8 +60,6 @@ class Application extends Container
         $this->registerBaseBindings();
 
         $this->registerBaseService();
-
-        $this->bootRouter();
     }
 
     /**
@@ -140,9 +131,10 @@ class Application extends Container
     protected function registerBaseService()
     {
         $this->register(new Service\ExceptionService($this));
+        $this->register(new Service\FacadeService($this));
+        $this->register(new Service\RouteService($this));
         $this->register(new Service\HttpService($this));
         $this->register(new Service\DatabaseService($this));
-        $this->register(new Service\FacadeService($this));
     }
 
     /**
@@ -158,16 +150,6 @@ class Application extends Container
         }
 
         $this->services[] = $service;
-    }
-
-    /**
-     * 初始化路由
-     *
-     * @return void
-     */
-    protected function bootRouter()
-    {
-        $this->router = new Router($this);
     }
 
     /**
@@ -247,7 +229,7 @@ class Application extends Container
         return function ($request) {
             $this->instance('request', $request);
             
-            return $this->router->dispatch($request);
+            return $this['router']->dispatch($request);
         };
     }
 

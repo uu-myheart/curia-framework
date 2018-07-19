@@ -11,7 +11,7 @@ Class Facade
 	/**
      * Set the application instance.
      *
-     * @param  \Illuminate\Contracts\Foundation\Application  $app
+     * @param  \Curia\Framework\Application  $app
      * @return void
      */
     public static function setFacadeApplication($app)

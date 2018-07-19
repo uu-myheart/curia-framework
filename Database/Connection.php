@@ -143,6 +143,29 @@ Class Connection
     {
         $this->pdo->rollback();
     }
+
+    /**
+     * Begin a fluent query against a database table.
+     *
+     * @param  string  $table
+     * @return \Illuminate\Database\Query\Builder
+     */
+    public function table($table)
+    {
+        return $this->query()->from($table);
+    }
+
+    /**
+     * Get a new query builder instance.
+     *
+     * @return \Illuminate\Database\Query\Builder
+     */
+    public function query()
+    {
+        return new QueryBuilder(
+            $this/*, $this->getQueryGrammar(), $this->getPostProcessor()*/
+        );
+    }
 }
 
 
