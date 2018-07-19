@@ -5,11 +5,25 @@ namespace Curia\Framework\Database;
 Class Grammar
 {
 	/**
+     * The value of the expression.
+     *
+     * @var mixed
+     */
+    protected static $value;
+
+	/**
      * The grammar table prefix.
      *
      * @var string
      */
-    protected $tablePrefix = '';
+    protected static $tablePrefix = '';
+
+    /**
+     * The grammar specific operators.
+     *
+     * @var array
+     */
+    protected static $operators = [];
 
     /**
      * The components that make up a select clause.
@@ -204,6 +218,18 @@ Class Grammar
     }
 
     /**
+     * Compile the "limit" portions of the query.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  int  $limit
+     * @return string
+     */
+    protected static function compileLimit(QueryBuilder $query, $limit)
+    {
+        return 'limit '.(int) $limit;
+    }
+
+    /**
      * Compile the "where" portions of the query.
      *
      * @param  \Illuminate\Database\Query\Builder  $query
@@ -237,7 +263,105 @@ Class Grammar
     protected static function compileWheresToArray($query)
     {
         return collect($query->wheres)->map(function ($where) use ($query) {
-            return $where['boolean'].' '.staitc::{"where{$where['type']}"}($query, $where);
+            return $where['boolean'].' '.static::{"where{$where['type']}"}($query, $where);
         })->all();
+    }
+
+    /**
+     * Compile a nested where clause.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  array  $where
+     * @return string
+     */
+    protected static function whereNested(QueryBuilder $query, $where)
+    {
+        // Here we will calculate what portion of the string we need to remove. If this
+        // is a join clause query, we need to remove the "on" portion of the SQL and
+        // if it is a normal query we need to take the leading "where" of queries.
+        $offset = $query instanceof JoinClause ? 3 : 6;
+
+        return '('.substr(static::compileWheres($where['query']), $offset).')';
+    }
+
+    /**
+     * Compile a basic where clause.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  array  $where
+     * @return string
+     */
+    protected static function whereBasic(QueryBuilder $query, $where)
+    {
+        $value = static::parameter($where['value']);
+
+        return static::wrap($where['column']).' '.$where['operator'].' '.$value;
+    }
+
+    /**
+     * Get the appropriate query parameter place-holder for a value.
+     *
+     * @param  mixed   $value
+     * @return string
+     */
+    public static function parameter($value)
+    {
+        return static::isExpression($value) ? static::getValue($value) : '?';
+    }
+
+    /**
+     * Determine if the given value is a raw expression.
+     *
+     * @param  mixed  $value
+     * @return bool
+     */
+    public static function isExpression($value)
+    {
+        return $value instanceof Expression;
+    }
+
+    /**
+     * Get the value of the expression.
+     *
+     * @return mixed
+     */
+    public function getValue()
+    {
+        return static::value;
+    }
+
+    /**
+     * Format the where clause statements into one string.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  array  $sql
+     * @return string
+     */
+    protected static function concatenateWhereClauses($query, $sql)
+    {
+        $conjunction = $query instanceof JoinClause ? 'on' : 'where';
+
+        return $conjunction.' ' . static::removeLeadingBoolean(implode(' ', $sql));
+    }
+
+    /**
+     * Remove the leading boolean from a statement.
+     *
+     * @param  string  $value
+     * @return string
+     */
+    protected static function removeLeadingBoolean($value)
+    {
+        return preg_replace('/and |or /i', '', $value, 1);
+    }
+
+    /**
+     * Get the grammar specific operators.
+     *
+     * @return array
+     */
+    public static function getOperators()
+    {
+        return static::$operators;
     }
 }
