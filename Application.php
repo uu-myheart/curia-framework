@@ -3,7 +3,7 @@
 namespace Curia\Framework;
 
 use Curia\Collect\Str;
-use Curia\Framework\Baton;
+use Curia\Collect\Config;
 use Curia\Container\Container;
 use Curia\Framework\Routing\Router;
 use Psr\Http\Message\ResponseInterface;
@@ -16,13 +16,6 @@ class Application extends Container
      * @var string
      */
     protected $basePath;
-
-    /**
-     * 配置文件管理实例
-     * 
-     * @var \Curia\Framework\Config 
-     */
-    protected $config;
 
     /**
      * Application services.
@@ -84,7 +77,7 @@ class Application extends Container
         (new \Dotenv\Dotenv($this->basePath()))->load();
         
         // 实例化创建配置文件管理类
-        $this->config = new Config(
+        $this['config'] = new Config(
             $this->getConfiguration()
         );
     }

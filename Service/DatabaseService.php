@@ -2,7 +2,7 @@
 
 namespace Curia\Framework\Service;
 
-use Curia\Framework\Database\DatabaseManager;
+use Curia\Database\DatabaseManager;
 
 class DatabaseService extends Service
 {
