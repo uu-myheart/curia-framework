@@ -23,26 +23,26 @@ class JoinClause extends QueryBuilder
     /**
      * The parent query builder instance.
      *
-     * @var \Illuminate\Database\Query\Builder
+     * @var \Curia\Database\QueryBuilder
      */
     private $parentQuery;
 
     /**
      * Create a new join clause instance.
      *
-     * @param  \Illuminate\Database\Query\Builder $parentQuery
+     * @param  \Curia\Database\QueryBuilder $parentQuery
      * @param  string  $type
      * @param  string  $table
      * @return void
      */
-    public function __construct(Builder $parentQuery, $type, $table)
+    public function __construct(QueryBuilder $parentQuery, $type, $table)
     {
         $this->type = $type;
         $this->table = $table;
         $this->parentQuery = $parentQuery;
 
         parent::__construct(
-            $parentQuery->getConnection(), $parentQuery->getGrammar(), $parentQuery->getProcessor()
+            $parentQuery->getConnection()
         );
     }
 
@@ -101,7 +101,7 @@ class JoinClause extends QueryBuilder
     /**
      * Create a new query instance for sub-query.
      *
-     * @return \Illuminate\Database\Query\Builder
+     * @return \Curia\Database\QueryBuilder
      */
     protected function forSubQuery()
     {

@@ -187,9 +187,24 @@ Class Grammar
     {
         return collect($segments)->map(function ($segment, $key) use ($segments) {
             return $key == 0 && count($segments) > 1
-                            ? static::wrap($segment)
+                            ? static::wrapTable($segment)
                             : static::wrapValue($segment);
         })->implode('.');
+    }
+
+    /**
+     * Wrap a table in keyword identifiers.
+     *
+     * @param  \Illuminate\Database\Query\Expression|string  $table
+     * @return string
+     */
+    public static function wrapTable($table)
+    {
+        if (! $table instanceof Expression) {
+            return static::wrap(static::$tablePrefix.$table, true);
+        }
+
+        return static::getValue($table);
     }
 
     /**
@@ -229,6 +244,18 @@ Class Grammar
     protected static function compileLimit(QueryBuilder $query, $limit)
     {
         return 'limit '.(int) $limit;
+    }
+
+    /**
+     * Compile the "offset" portions of the query.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  int  $offset
+     * @return string
+     */
+    protected static function compileOffset(QueryBuilder $query, $offset)
+    {
+        return 'offset '.(int) $offset;
     }
 
     /**
@@ -702,5 +729,23 @@ Class Grammar
         $values = static::parameterize($where['values']);
 
         return '('.implode(', ', $where['columns']).') '.$where['operator'].' ('.$values.')';
+    }
+
+    /**
+     * Compile the "join" portions of the query.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  array  $joins
+     * @return string
+     */
+    protected static function compileJoins(QueryBuilder $query, $joins)
+    {
+        return collect($joins)->map(function ($join) use ($query) {
+            $table = static::wrapTable($join->table);
+
+            $nestedJoins = is_null($join->joins) ? '' : ' '.static::compileJoins($query, $join->joins);
+
+            return trim("{$join->type} join {$table}{$nestedJoins} " . static::compileWheres($join));
+        })->implode(' ');
     }
 }
