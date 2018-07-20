@@ -1924,6 +1924,113 @@ Class QueryBuilder
             return ! $binding instanceof Expression;
         }));
     }
+
+    /**
+     * Update a record in the database.
+     *
+     * @param  array  $values
+     * @return int
+     */
+    public function update(array $values)
+    {
+        $sql = Grammar::compileUpdate($this, $values);
+
+        return $this->connection->update($sql, $this->cleanBindings(
+            Grammar::prepareBindingsForUpdate($this->bindings, $values)
+        ));
+    }
+
+    /**
+     * Insert or update a record matching the attributes, and fill it with values.
+     *
+     * @param  array  $attributes
+     * @param  array  $values
+     * @return bool
+     */
+    public function updateOrInsert(array $attributes, array $values = [])
+    {
+        if (! $this->where($attributes)->exists()) {
+            return $this->insert(array_merge($attributes, $values));
+        }
+
+        return (bool) $this->take(1)->update($values);
+    }
+
+    /**
+     * Increment a column's value by a given amount.
+     *
+     * @param  string  $column
+     * @param  float|int  $amount
+     * @param  array   $extra
+     * @return int
+     */
+    public function increment($column, $amount = 1, array $extra = [])
+    {
+        if (! is_numeric($amount)) {
+            throw new InvalidArgumentException('Non-numeric value passed to increment method.');
+        }
+
+        $wrapped = Grammar::wrap($column);
+
+        $columns = array_merge([$column => $this->raw("$wrapped + $amount")], $extra);
+
+        return $this->update($columns);
+    }
+
+    /**
+     * Decrement a column's value by a given amount.
+     *
+     * @param  string  $column
+     * @param  float|int  $amount
+     * @param  array   $extra
+     * @return int
+     */
+    public function decrement($column, $amount = 1, array $extra = [])
+    {
+        if (! is_numeric($amount)) {
+            throw new InvalidArgumentException('Non-numeric value passed to decrement method.');
+        }
+
+        $wrapped = Grammar::wrap($column);
+
+        $columns = array_merge([$column => $this->raw("$wrapped - $amount")], $extra);
+
+        return $this->update($columns);
+    }
+
+    /**
+     * Delete a record from the database.
+     *
+     * @param  mixed  $id
+     * @return int
+     */
+    public function delete($id = null)
+    {
+        // If an ID is passed to the method, we will set the where clause to check the
+        // ID to let developers to simply and quickly remove a single row from this
+        // database without manually specifying the "where" clauses on the query.
+        if (! is_null($id)) {
+            $this->where($this->from.'.id', '=', $id);
+        }
+
+        return $this->connection->delete(
+            Grammar::compileDelete($this), $this->cleanBindings(
+                Grammar::prepareBindingsForDelete($this->bindings)
+            )
+        );
+    }
+
+    /**
+     * Run a truncate statement on the table.
+     *
+     * @return void
+     */
+    public function truncate()
+    {
+        foreach (Grammar::compileTruncate($this) as $sql => $bindings) {
+            $this->connection->statement($sql, $bindings);
+        }
+    }
 }
 
 
