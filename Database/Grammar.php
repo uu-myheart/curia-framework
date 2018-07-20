@@ -748,4 +748,110 @@ Class Grammar
             return trim("{$join->type} join {$table}{$nestedJoins} " . static::compileWheres($join));
         })->implode(' ');
     }
+
+    /**
+     * Compile a single union statement.
+     *
+     * @param  array  $union
+     * @return string
+     */
+    protected static function compileUnion(array $union)
+    {
+        $conjunction = $union['all'] ? ' union all ' : ' union ';
+
+        return $conjunction.'('.$union['query']->toSql().')';
+    }
+
+    /**
+     * Compile the "union" queries attached to the main query.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @return string
+     */
+    protected static function compileUnions(QueryBuilder $query)
+    {
+        $sql = '';
+
+        foreach ($query->unions as $union) {
+            $sql .= static::compileUnion($union);
+        }
+
+        if (! empty($query->unionOrders)) {
+            $sql .= ' '.static::compileOrders($query, $query->unionOrders);
+        }
+
+        if (isset($query->unionLimit)) {
+            $sql .= ' '.static::compileLimit($query, $query->unionLimit);
+        }
+
+        if (isset($query->unionOffset)) {
+            $sql .= ' '.static::compileOffset($query, $query->unionOffset);
+        }
+
+        return ltrim($sql);
+    }
+
+    /**
+     * Compile an aggregated select clause.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  array  $aggregate
+     * @return string
+     */
+    protected static function compileAggregate(QueryBuilder $query, $aggregate)
+    {
+        $column = static::columnize($aggregate['columns']);
+
+        // If the query has a "distinct" constraint and we're not asking for all columns
+        // we need to prepend "distinct" onto the column name so that the query takes
+        // it into account when it performs the aggregating operations on the data.
+        if ($query->distinct && $column !== '*') {
+            $column = 'distinct '.$column;
+        }
+
+        return 'select '.$aggregate['function'].'('.$column.') as aggregate';
+    }
+
+    /**
+     * Compile an insert statement into SQL.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  array  $values
+     * @return string
+     */
+    public static function compileInsert(QueryBuilder $query, array $values)
+    {
+        // Essentially we will force every insert to be treated as a batch insert which
+        // simply makes creating the SQL easier for us since we can utilize the same
+        // basic routine regardless of an amount of records given to us to insert.
+        $table = static::wrapTable($query->from);
+
+        if (! is_array(reset($values))) {
+            $values = [$values];
+        }
+
+        $columns = static::columnize(array_keys(reset($values)));
+
+        // We need to build a list of parameter place-holders of values that are bound
+        // to the query. Each insert should have the exact same amount of parameter
+        // bindings so we will loop through the record and parameterize them all.
+        $parameters = collect($values)->map(function ($record) {
+            return '('.static::parameterize($record).')';
+        })->implode(', ');
+
+        return "insert into $table ($columns) values $parameters";
+    }
+
+    /**
+     * Compile an insert and get ID statement into SQL.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  array   $values
+     * @param  string  $sequence
+     * @return string
+     */
+    public static function compileInsertGetId(QueryBuilder $query, $values, $sequence)
+    {
+        return static::compileInsert($query, $values);
+    }
 }

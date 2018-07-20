@@ -177,6 +177,16 @@ Class Connection
     {
         return new Expression($value);
     }
+
+    /**
+     * Get the current PDO connection.
+     *
+     * @return \PDO
+     */
+    public function getPdo()
+    {
+        return $this->pdo;
+    }
 }
 
 
