@@ -152,6 +152,10 @@ Class Grammar
      */
     public static function wrap($value)
     {
+        if ($value instanceof Expression) {
+            return $value->getValue();
+        }
+
         if (strpos(strtolower($value), ' as ') !== false) {
             return static::wrapAliasedValue($value);
         }
@@ -197,9 +201,7 @@ Class Grammar
     protected static function wrapValue($value)
     {
         if ($value !== '*') {
-        	return '`' . $value . '`';
-
-	        // return '"'.str_replace('"', '""', $value).'"';
+        	return '`' . str_replace('`', '``', $value) . '`';
 	    }
 
 	    return $value;
@@ -220,7 +222,7 @@ Class Grammar
     /**
      * Compile the "limit" portions of the query.
      *
-     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  \Curia\Database\QueryBuilder  $query
      * @param  int  $limit
      * @return string
      */
@@ -232,7 +234,7 @@ Class Grammar
     /**
      * Compile the "where" portions of the query.
      *
-     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  \Curia\Database\QueryBuilder  $query
      * @return string
      */
     protected static function compileWheres(QueryBuilder $query)
@@ -257,7 +259,7 @@ Class Grammar
     /**
      * Get an array of all the where clauses for the query.
      *
-     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  \Curia\Database\QueryBuilder  $query
      * @return array
      */
     protected static function compileWheresToArray($query)
@@ -270,7 +272,7 @@ Class Grammar
     /**
      * Compile a nested where clause.
      *
-     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  \Curia\Database\QueryBuilder  $query
      * @param  array  $where
      * @return string
      */
@@ -287,7 +289,7 @@ Class Grammar
     /**
      * Compile a basic where clause.
      *
-     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  \Curia\Database\QueryBuilder  $query
      * @param  array  $where
      * @return string
      */
@@ -299,6 +301,114 @@ Class Grammar
     }
 
     /**
+     * Compile a where condition with a sub-select.
+     *
+     * @param  \Curia\Database\QueryBuilder $query
+     * @param  array   $where
+     * @return string
+     */
+    protected static function whereSub(QueryBuilder $query, $where)
+    {
+        $select = static::compileSelect($where['query']);
+
+        return static::wrap($where['column']).' '.$where['operator']." ($select)";
+    }
+
+    /**
+     * Compile a "where null" clause.
+     *
+     * @param  \Curia\Database\QueryBuilder  $query
+     * @param  array  $where
+     * @return string
+     */
+    protected static function whereNull(QueryBuilder $query, $where)
+    {
+        return static::wrap($where['column']).' is null';
+    }
+
+    /**
+     * Compile a "where not null" clause.
+     *
+     * @param  \Curia\Database\QueryBuilder  $query
+     * @param  array  $where
+     * @return string
+     */
+    protected static function whereNotNull(QueryBuilder $query, $where)
+    {
+        return static::wrap($where['column']).' is not null';
+    }
+
+    /**
+     * Compile a "between" where clause.
+     *
+     * @param  \Curia\Database\QueryBuilder  $query
+     * @param  array  $where
+     * @return string
+     */
+    protected static function whereBetween(QueryBuilder $query, $where)
+    {
+        $between = $where['not'] ? 'not between' : 'between';
+
+        return static::wrap($where['column']).' '.$between.' ? and ?';
+    }
+
+    /**
+     * Compile a "where in" clause.
+     *
+     * @param  \Curia\Database\QueryBuilder  $query
+     * @param  array  $where
+     * @return string
+     */
+    protected static function whereIn(QueryBuilder $query, $where)
+    {
+        if (! empty($where['values'])) {
+            return static::wrap($where['column']).' in ('.static::parameterize($where['values']).')';
+        }
+
+        return '0 = 1';
+    }
+
+    /**
+     * Compile a "where not in" clause.
+     *
+     * @param  \Curia\Database\QueryBuilder  $query
+     * @param  array  $where
+     * @return string
+     */
+    protected static function whereNotIn(QueryBuilder $query, $where)
+    {
+        if (! empty($where['values'])) {
+            return static::wrap($where['column']).' not in ('.static::parameterize($where['values']).')';
+        }
+
+        return '1 = 1';
+    }
+
+    /**
+     * Compile a where in sub-select clause.
+     *
+     * @param  \Curia\Database\QueryBuilder  $query
+     * @param  array  $where
+     * @return string
+     */
+    protected static function whereInSub(QueryBuilder $query, $where)
+    {
+        return static::wrap($where['column']).' in ('.static::compileSelect($where['query']).')';
+    }
+
+    /**
+     * Compile a where not in sub-select clause.
+     *
+     * @param  \Curia\Database\QueryBuilder  $query
+     * @param  array  $where
+     * @return string
+     */
+    protected static function whereNotInSub(QueryBuilder $query, $where)
+    {
+        return static::wrap($where['column']).' not in ('.static::compileSelect($where['query']).')';
+    }
+
+    /**
      * Get the appropriate query parameter place-holder for a value.
      *
      * @param  mixed   $value
@@ -306,34 +416,13 @@ Class Grammar
      */
     public static function parameter($value)
     {
-        return static::isExpression($value) ? static::getValue($value) : '?';
-    }
-
-    /**
-     * Determine if the given value is a raw expression.
-     *
-     * @param  mixed  $value
-     * @return bool
-     */
-    public static function isExpression($value)
-    {
-        return $value instanceof Expression;
-    }
-
-    /**
-     * Get the value of the expression.
-     *
-     * @return mixed
-     */
-    public function getValue()
-    {
-        return static::value;
+        return $value instanceof Expression ? $value->getValue($value) : '?';
     }
 
     /**
      * Format the where clause statements into one string.
      *
-     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  \Curia\Database\QueryBuilder  $query
      * @param  array  $sql
      * @return string
      */
@@ -363,5 +452,255 @@ Class Grammar
     public static function getOperators()
     {
         return static::$operators;
+    }
+
+    /**
+     * Create query parameter place-holders for an array.
+     *
+     * @param  array   $values
+     * @return string
+     */
+    public static function parameterize(array $values)
+    {
+        return implode(', ', array_map(['static', 'parameter'], $values));
+    }
+
+    /**
+     * Compile a "where date" clause.
+     *
+     * @param  \Curia\Database\QueryBuilder  $query
+     * @param  array  $where
+     * @return string
+     */
+    protected static function whereDate(QueryBuilder $query, $where)
+    {
+        return static::dateBasedWhere('date', $query, $where);
+    }
+
+    /**
+     * Compile a "where time" clause.
+     *
+     * @param  \Curia\Database\QueryBuilder  $query
+     * @param  array  $where
+     * @return string
+     */
+    protected static function whereTime(QueryBuilder $query, $where)
+    {
+        return static::dateBasedWhere('time', $query, $where);
+    }
+
+    /**
+     * Compile a "where day" clause.
+     *
+     * @param  \Curia\Database\QueryBuilder  $query
+     * @param  array  $where
+     * @return string
+     */
+    protected static function whereDay(QueryBuilder $query, $where)
+    {
+        return static::dateBasedWhere('day', $query, $where);
+    }
+
+    /**
+     * Compile a "where month" clause.
+     *
+     * @param  \Curia\Database\QueryBuilder  $query
+     * @param  array  $where
+     * @return string
+     */
+    protected static function whereMonth(QueryBuilder $query, $where)
+    {
+        return static::dateBasedWhere('month', $query, $where);
+    }
+
+    /**
+     * Compile a "where year" clause.
+     *
+     * @param  \Curia\Database\QueryBuilder  $query
+     * @param  array  $where
+     * @return string
+     */
+    protected static function whereYear(QueryBuilder $query, $where)
+    {
+        return static::dateBasedWhere('year', $query, $where);
+    }
+
+    /**
+     * Compile a date based where clause.
+     *
+     * @param  string  $type
+     * @param  \Curia\Database\QueryBuilder  $query
+     * @param  array  $where
+     * @return string
+     */
+    protected static function dateBasedWhere($type, QueryBuilder $query, $where)
+    {
+        $value = static::parameter($where['value']);
+
+        return $type.'('.static::wrap($where['column']).') '.$where['operator'].' '.$value;
+    }
+
+    /**
+     * Compile a where clause comparing two columns..
+     *
+     * @param  \Curia\Database\QueryBuilder  $query
+     * @param  array  $where
+     * @return string
+     */
+    protected static function whereColumn(QueryBuilder $query, $where)
+    {
+        return static::wrap($where['first']).' '.$where['operator'].' '.static::wrap($where['second']);
+    }
+
+    /**
+     * Compile a where exists clause.
+     *
+     * @param  \Curia\Database\QueryBuilder  $query
+     * @param  array  $where
+     * @return string
+     */
+    protected static function whereExists(QueryBuilder $query, $where)
+    {
+        return 'exists ('.static::compileSelect($where['query']).')';
+    }
+
+    /**
+     * Compile a where exists clause.
+     *
+     * @param  \Curia\Database\QueryBuilder  $query
+     * @param  array  $where
+     * @return string
+     */
+    protected static function whereNotExists(QueryBuilder $query, $where)
+    {
+        return 'not exists ('.static::compileSelect($where['query']).')';
+    }
+
+    /**
+     * Compile a raw where clause.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  array  $where
+     * @return string
+     */
+    protected static function whereRaw(QueryBuilder $query, $where)
+    {
+        return $where['sql'];
+    }
+
+    /**
+     * Compile the "order by" portions of the query.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  array  $orders
+     * @return string
+     */
+    protected static function compileOrders(QueryBuilder $query, $orders)
+    {
+        if (! empty($orders)) {
+            return 'order by '.implode(', ', static::compileOrdersToArray($query, $orders));
+        }
+
+        return '';
+    }
+
+    /**
+     * Compile the query orders to an array.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  array  $orders
+     * @return array
+     */
+    protected static function compileOrdersToArray(QueryBuilder $query, $orders)
+    {
+        return array_map(function ($order) {
+            return ! isset($order['sql'])
+                        ? static::wrap($order['column']).' '.$order['direction']
+                        : $order['sql'];
+        }, $orders);
+    }
+
+    /**
+     * Compile the random statement into SQL.
+     *
+     * @param  string  $seed
+     * @return string
+     */
+    public static function compileRandom($seed)
+    {
+        return 'RAND('.$seed.')';
+    }
+
+    /**
+     * Compile the "group by" portions of the query.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  array  $groups
+     * @return string
+     */
+    protected static function compileGroups(QueryBuilder $query, $groups)
+    {
+        return 'group by '.static::columnize($groups);
+    }
+
+    /**
+     * Compile the "having" portions of the query.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  array  $havings
+     * @return string
+     */
+    protected static function compileHavings(QueryBuilder $query, $havings)
+    {
+        $sql = implode(' ', array_map(['static', 'compileHaving'], $havings));
+
+        return 'having '.static::removeLeadingBoolean($sql);
+    }
+
+    /**
+     * Compile a single having clause.
+     *
+     * @param  array   $having
+     * @return string
+     */
+    protected static function compileHaving(array $having)
+    {
+        // If the having clause is "raw", we can just return the clause straight away
+        // without doing any more processing on it. Otherwise, we will compile the
+        // clause into SQL based on the components that make it up from builder.
+        if ($having['type'] === 'Raw') {
+            return $having['boolean'].' '.$having['sql'];
+        }
+
+        return static::compileBasicHaving($having);
+    }
+
+    /**
+     * Compile a basic having clause.
+     *
+     * @param  array   $having
+     * @return string
+     */
+    protected static function compileBasicHaving($having)
+    {
+        $column = static::wrap($having['column']);
+
+        $parameter = static::parameter($having['value']);
+
+        return $having['boolean'].' '.$column.' '.$having['operator'].' '.$parameter;
+    }
+
+    /**
+     * Compile a where row values condition.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  array  $where
+     * @return string
+     */
+    protected static function whereRowValues(QueryBuilder $query, $where)
+    {
+        $values = static::parameterize($where['values']);
+
+        return '('.implode(', ', $where['columns']).') '.$where['operator'].' ('.$values.')';
     }
 }

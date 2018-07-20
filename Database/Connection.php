@@ -166,6 +166,17 @@ Class Connection
             $this/*, $this->getQueryGrammar(), $this->getPostProcessor()*/
         );
     }
+
+    /**
+     * Get a new raw query expression.
+     *
+     * @param  mixed  $value
+     * @return \Illuminate\Database\Query\Expression
+     */
+    public function raw($value)
+    {
+        return new Expression($value);
+    }
 }
 
 
