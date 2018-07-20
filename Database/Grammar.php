@@ -944,6 +944,106 @@ Class Grammar
             array_merge($bindings['join'], $values, Arr::flatten($cleanBindings))
         );
     }
+
+    /**
+     * Compile an exists statement into SQL.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @return string
+     */
+    public static function compileExists(QueryBuilder $query)
+    {
+        $select = static::compileSelect($query);
+
+        return "select exists({$select}) as " . static::wrap('exists');
+    }
+
+    /**
+     * Compile a delete statement into SQL.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @return string
+     */
+    public static function compileDelete(QueryBuilder $query)
+    {
+        $table = static::wrapTable($query->from);
+
+        $where = is_array($query->wheres) ? static::compileWheres($query) : '';
+
+        return isset($query->joins)
+                    ? static::compileDeleteWithJoins($query, $table, $where)
+                    : static::compileDeleteWithoutJoins($query, $table, $where);
+    }
+
+    /**
+     * Compile a delete query that uses joins.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  string  $table
+     * @param  array  $where
+     * @return string
+     */
+    protected static function compileDeleteWithJoins($query, $table, $where)
+    {
+        $joins = ' '.static::compileJoins($query, $query->joins);
+
+        $alias = strpos(strtolower($table), ' as ') !== false
+                ? explode(' as ', $table)[1] : $table;
+
+        return trim("delete {$alias} from {$table}{$joins} {$where}");
+    }
+
+    /**
+     * Compile a delete query that does not use joins.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  string  $table
+     * @param  array  $where
+     * @return string
+     */
+    protected static function compileDeleteWithoutJoins($query, $table, $where)
+    {
+        $sql = trim("delete from {$table} {$where}");
+
+        // When using MySQL, delete statements may contain order by statements and limits
+        // so we will compile both of those here. Once we have finished compiling this
+        // we will return the completed SQL statement so it will be executed for us.
+        if (! empty($query->orders)) {
+            $sql .= ' '.static::compileOrders($query, $query->orders);
+        }
+
+        if (isset($query->limit)) {
+            $sql .= ' '.static::compileLimit($query, $query->limit);
+        }
+
+        return $sql;
+    }
+
+    /**
+     * Prepare the bindings for a delete statement.
+     *
+     * @param  array  $bindings
+     * @return array
+     */
+    public static function prepareBindingsForDelete(array $bindings)
+    {
+        $cleanBindings = Arr::except($bindings, ['join', 'select']);
+
+        return array_values(
+            array_merge($bindings['join'], Arr::flatten($cleanBindings))
+        );
+    }
+
+    /**
+     * Compile a truncate table statement into SQL.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @return array
+     */
+    public static function compileTruncate(QueryBuilder $query)
+    {
+        return ['truncate '.static::wrapTable($query->from) => []];
+    }
 }
 
 

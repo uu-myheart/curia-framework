@@ -1663,7 +1663,7 @@ Class QueryBuilder
     public function exists()
     {
         $results = $this->connection->select(
-            Grammar::compileExists($this), $this->getBindings(), ! $this->useWritePdo
+            Grammar::compileExists($this), $this->getBindings()
         );
 
         // If the results has rows, we will get the row and see if the exists column is a
@@ -1953,7 +1953,7 @@ Class QueryBuilder
             return $this->insert(array_merge($attributes, $values));
         }
 
-        return (bool) $this->take(1)->update($values);
+        return (bool) $this->limit(1)->update($values);
     }
 
     /**

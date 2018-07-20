@@ -87,7 +87,7 @@ Class Connection
         return $this->statement($query, $bindings);
     }
 
-    protected function statement($query, $bindings)
+    public function statement($query, $bindings)
     {
     	$statement = $this->pdo->prepare($query);
 
