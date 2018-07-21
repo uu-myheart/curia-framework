@@ -2,6 +2,7 @@
 
 namespace Curia\Framework\Service;
 
+use Curia\Database\Model;
 use Curia\Database\DatabaseManager;
 
 class DatabaseService extends Service
@@ -11,5 +12,10 @@ class DatabaseService extends Service
         $this->app->singleton('db', function ($app) {
             return new DatabaseManager($app);
         });
+    }
+
+    public function boot()
+    {
+    	$this->app['db']->bootModel();
     }
 }

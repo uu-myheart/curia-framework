@@ -30,3 +30,14 @@ if (! function_exists('redirect')) {
         return new \Curia\Framework\Http\Redirect($uri, $status, $headers);
     }
 }
+
+if (! function_exists('request')) {
+    function request(...$args)
+    {
+        if (! $args) {
+            return app('request');
+        }
+
+        return request()->only(...$args);
+    }
+}

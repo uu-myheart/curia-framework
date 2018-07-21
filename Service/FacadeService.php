@@ -13,7 +13,7 @@ class FacadeService extends Service
     {
         Facade::setFacadeApplication($this->app);
 
-        $aliases = $this->app->config('app.aliases');
+        $aliases = $this->app['config']['app.aliases'];
 
         foreach ($aliases as $alias => $class) {
             class_alias($class, $alias);

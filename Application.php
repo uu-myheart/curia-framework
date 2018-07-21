@@ -77,9 +77,7 @@ class Application extends Container
         (new \Dotenv\Dotenv($this->basePath()))->load();
         
         // 实例化创建配置文件管理类
-        $this['config'] = new Config(
-            $this->getConfiguration()
-        );
+        $this->instance('config', new Config($this->getConfiguration()));
     }
 
     protected function getConfiguration()
@@ -93,17 +91,6 @@ class Application extends Container
                 return [Str::before($item, '.php') => require($file) ];
             }
         })->toArray();
-    }
-
-    /**
-     * 获取config实例或者具体配置内容
-     * 
-     * @param null $key
-     * @return Config
-     */
-    public function config($key = null)
-    {
-        return $key ? $this->config->get($key) : $this->config;
     }
 
     /**
